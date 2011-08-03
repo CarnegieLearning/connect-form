@@ -4,7 +4,8 @@
  */
 
 var connect = require('connect'),
-    form = require('./../index');
+    form = require('./../index'),
+    assert = require('assert');
 
 // Test server
 
@@ -27,7 +28,7 @@ var server = connect.createServer(
 
 // Tests
 
-exports['test single multipart field'] = function(assert){
+exports['test single multipart field'] = function(){
     var headers = {
         'Content-Type': 'multipart/form-data; boundary=----WebKitFormBoundaryMfJEpQcCbybb6A8U'
     };
@@ -49,7 +50,7 @@ exports['test single multipart field'] = function(assert){
         { body: '{"name":"foo"}{}' });
 };
 
-exports['test several multipart fields'] = function(assert){
+exports['test several multipart fields'] = function(){
     var headers = {
         'Content-Type': 'multipart/form-data; boundary=----WebKitFormBoundaryMfJEpQcCbybb6A8U'
     };
@@ -71,7 +72,7 @@ exports['test several multipart fields'] = function(assert){
         { body: '{"name":"foo","comments":"foo bar baz"}{}' });
 };
 
-exports['test malformed multipart'] = function(assert){
+exports['test malformed multipart'] = function(){
     var headers = {
         'Content-Type': 'multipart/form-data; boundary=----WebKitFormBoundaryMfJEpQcCbybb6A8U'
     };
@@ -89,7 +90,7 @@ exports['test malformed multipart'] = function(assert){
         { body: '"parser error, 2 of 134 bytes parsed"{}{}' });
 };
 
-exports['test multipart files'] = function(assert){
+exports['test multipart files'] = function(){
     var headers = {
         'Content-Type': 'multipart/form-data; boundary=----WebKitFormBoundaryMfJEpQcCbybb6A8U'
     };
@@ -114,7 +115,7 @@ exports['test multipart files'] = function(assert){
         });
 };
 
-exports['test urlencoded'] = function(assert){
+exports['test urlencoded'] = function(){
     var headers = {
         'Content-Type': 'application/x-www-form-urlencoded'
     };
@@ -126,13 +127,36 @@ exports['test urlencoded'] = function(assert){
         { body: '{"thanks":"felix","for":"the","cool":"lib"}{}' });
 };
 
-exports['test bodyDecoder'] = function(assert){
+exports['test bodyParser'] = function(){
     var server = connect.createServer(
-        connect.bodyDecoder(),
+        connect.bodyParser(),
         form(),
         function(req, res){
             res.writeHead(200, {});
             res.end(JSON.stringify(req.body));
+        }
+    );
+
+    var headers = {
+        'Content-Type': 'application/x-www-form-urlencoded'
+    };
+
+    var body = 'foo=bar';
+    
+    assert.response(server,
+        { url: '/', method: 'POST', data: body, headers: headers },
+        { body: '{"foo":"bar"}' });
+};
+
+exports['test asyncMiddleware'] = function(){
+    var server = connect.createServer(
+        form(),
+        function(req, res, next) {
+            setTimeout(next, 50);
+        },
+        function(req, res){
+            res.writeHead(200, {});
+            res.end(JSON.stringify(req.form.fields));
         }
     );
 
